@@ -1,0 +1,37 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-07
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package sw
+$
+
+_pragma(classify_level=restricted)
+_method rwo_specials_plugin.terminate()
+	_self.terminate_plugins()
+	_super.terminate()
+_endmethod
+$
+
+
+_pragma(classify_level=restricted)
+_private _method rwo_specials_plugin.terminate_plugins()
+	_for a_plugin _over .plugins.fast_elements()
+	_loop
+		a_plugin.terminate()
+	_endloop
+_endmethod
+$
+

@@ -1,0 +1,73 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-04
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=basic, topic={demo})
+def_slotted_exemplar(
+	:supply_point_embed_plugin,
+	{},
+	:plugin )
+$
+
+_pragma(classify_level=restricted)
+supply_point_embed_plugin.define_shared_constant( :databus_consumer_data_types,
+	{ :map_selection },
+	:public )
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point_embed_plugin.build_gui(p_container)
+	_local dialog << supply_point_info_model.new(_self)
+	_local gui << dialog.build_embedded_gui(p_container)
+	gui.tab_label << dialog.title
+	
+	_self.cache_dialog(:the_dialog, dialog)
+	
+	_return gui
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method supply_point_embed_plugin.sw_databus_data_available(  data_type_name,  data )
+	## 
+	## Receives data from the editor's databus.
+	##
+	_if data_type_name _is :map_selection
+	_then
+		_local (map, geom_set) << (_scatter data)
+		_local sp << geom_set.rwo_set().select(predicate.eq(:rwo_type,:supply_point)).an_element()
+		_local dialog << _self.get_dialog(:the_dialog)
+		_if dialog _isnt _unset
+		_then 
+			dialog.select(sp)
+		_endif 
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method supply_point_embed_plugin.highlight(p_geom_set)
+	_if p_geom_set.empty? _then _return _endif
+	
+	_self.application.databus.make_data_available( :geometry_to_highlight,
+						       p_geom_set )
+_endmethod
+$
+

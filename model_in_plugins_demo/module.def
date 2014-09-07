@@ -1,0 +1,6 @@
+model_in_plugins_demo	1
+
+description
+	Demo to show a single model in multiple plugins
+end
+
