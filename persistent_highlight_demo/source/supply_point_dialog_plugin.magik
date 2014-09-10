@@ -1,0 +1,187 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-03
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=basic, topic={demo})
+def_slotted_exemplar(
+	:supply_point_dialog_plugin,
+	{
+		{:highlighting?, _unset},
+		{:highlight_set, _unset}
+	},
+	:plugin )
+$
+
+_pragma(classify_level=basic, topic={demo})
+##
+## defines the z-order of rendering of this plugin.
+supply_point_dialog_plugin.def_property( :highlight_priority,
+	:type, :integer, :default_value, 50,
+	:description, "Z priority of highlight rendering" )
+
+
+_pragma(classify_level=basic, topic={demo})
+_private _method supply_point_dialog_plugin.init(_gather p_args)
+	.highlighting? << _false
+	.highlight_set << geometry_set.new()
+	
+	_return _super.init(_scatter p_args)
+_endmethod
+$
+
+
+_pragma(classify_level=restricted)
+supply_point_dialog_plugin.define_shared_constant( :databus_consumer_data_types,
+	{ :map_selection },
+	:public )
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point_dialog_plugin.init_actions()
+	_self.add_action(
+		sw_action.new(:activate_dialog,
+			      :engine, _self,
+			      :caption, "Supply Point...",
+			      :action_message, :|activate_dialog()|))
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point_dialog_plugin.activate_dialog()
+	_local key << :the_dialog
+	_local dialog << _self.get_dialog(key)
+	_if dialog _is _unset
+	_then
+		dialog << supply_point_info_model.open(_self)
+		_self.cache_dialog(key, dialog)
+	_else
+		dialog.reactivate()
+	_endif
+	_return dialog
+_endmethod
+$
+
+
+_pragma(classify_level=restricted)
+_method supply_point_dialog_plugin.sw_databus_data_available(  data_type_name,  data )
+	## 
+	## Receives data from the editor's databus.
+	##
+	_if data_type_name _is :map_selection
+	_then
+		_local (map, geom_set) << (_scatter data)
+		_local sp << geom_set.rwo_set().select(predicate.eq(:rwo_type,:supply_point)).an_element()
+		_local dialog << _self.get_dialog(:the_dialog)
+		_if dialog _isnt _unset
+		_then 
+			dialog.select(sp)
+		_endif 
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method supply_point_dialog_plugin.terminate()
+	_if .highlighting?
+	_then
+		_self.stop_highlight()
+	_endif
+	_return _super.terminate()
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method supply_point_dialog_plugin.map_manager
+	_return _self.get_service_provider(:map_manager)
+_endmethod
+$
+
+
+##
+## HIGHLIGHT
+##
+
+_pragma(classify_level=restricted)
+_method supply_point_dialog_plugin.highlight(p_geom_set)
+	## Highlights P_GEOM_SET in all maps of my application.
+	## If P_GEOM_SET is unset or empty, then the highlight is stopped.
+	_if p_geom_set _is _unset _orif
+	    p_geom_set.empty?
+	_then
+		.highlight_set.empty()
+		_if .highlighting?
+		_then
+			_self.stop_highlight()
+			.highlighting? << _false 
+		_endif 
+	_else
+		.highlight_set << _self.create_highlight_set(p_geom_set)
+		_self.do_highlight()
+		.highlighting? << _true 
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_private _method supply_point_dialog_plugin.stop_highlight()
+	## Stop highlight. Remove ourself from the map_manager to avoid
+	## idle calls from the map_manager.
+	_local mm << _self.map_manager
+	mm.remove_post_renderer(_self)
+	mm.trigger_transient_redraw()
+_endmethod
+$
+
+
+_pragma(classify_level=restricted)
+_private _method supply_point_dialog_plugin.do_highlight()
+	## Start highlighting. Add ourself to the map_manager as a
+	## plugin that has something to render and trigger a redraw.
+	_local mm << _self.map_manager
+	_if _not .highlighting?
+	_then 
+		mm.add_post_renderer(_self, _self.highlight_priority, :transient_drawer)
+	_endif 
+	mm.trigger_transient_redraw()
+_endmethod
+$
+
+
+_pragma(classify_level=restricted)
+_private _method supply_point_dialog_plugin.create_highlight_set(p_geom_set)
+	## Create a geometry_set to use for highlighting. Using a
+	## transient_style_system we can create very nice styles.
+	_local new << p_geom_set.copy()
+	_local sts << transient_style_system.new()
+	sts.set_default_style( :chain,
+			       line_style.new_with_properties(
+				       :width, 3,
+				       :dash_pattern, dash_pattern.long_dash,
+				       :foreground_colour, colour.called(:yellow)))
+	new.style_system << sts
+	_return new
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method supply_point_dialog_plugin.map_damage_notify(p_graphics_context, p_map_view)
+	## Callback method from P_MAP_VIEW to allow us to render onto it.
+	p_map_view.draw_geometry_on(p_graphics_context, .highlight_set)
+_endmethod
+$

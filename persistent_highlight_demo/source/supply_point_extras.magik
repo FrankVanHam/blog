@@ -1,0 +1,88 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-04
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point.editor_plugin(p_editor)
+	_return supply_point_editor_plugin.new( :sp_plugin, p_editor )
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point.feeding_station
+	_local nf << _self.trace_out_for_station()
+	_local rwos <<  rwo_set.new_from(nf.visited_rwos)
+	_local link << rwos.select(predicate.eq(:rwo_type, :substation_internals_link)).an_element()
+	_if link _isnt _unset
+	_then
+		_return link.internal_label
+	_else
+		_return _unset
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point.path_to_station
+	nf << _self.trace_out_for_station()
+	_if nf _isnt _unset
+	_then
+		end_node << _self.end_node_in_trace(nf)
+	_endif 
+	_if end_node _isnt _unset
+	_then
+		_return _self.trace_to_station(end_node)
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method supply_point.trace_out_for_station()
+	_local nf << network_follower.new(50)
+	nf.trace_out(_self.location.node)
+	_return nf
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method supply_point.end_node_in_trace(p_nf)
+	_for i_node _over p_nf.done_nodes.fast_keys()
+	_loop
+		_for a_geom _over i_node.points()
+		_loop
+			_if a_geom.rwo_type _is :substation_internals_link
+			_then
+				end_node << i_node
+				_leave
+			_endif 
+		_endloop
+	_endloop
+	_return end_node
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method supply_point.trace_to_station(p_end_node)
+	_local nf << network_follower.new(50)
+	_local links << nf.shortest_path(_self.location.node, p_end_node)
+	_return links
+_endmethod
+$

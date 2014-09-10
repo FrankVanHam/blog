@@ -1,0 +1,128 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-03
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+#remex(:supply_point_info_model)
+_pragma(classify_level=basic, topic={demo})
+## Demo model that shows the attached substation for a
+## supply_point. Also provides highlight functionality to show
+## the path to the station.
+def_slotted_exemplar(
+	:supply_point_info_model,
+	{
+		{:supply_point, _unset}
+	},
+	:plugin_model )
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point_info_model.title
+	>> "Supply Point Model"
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point_info_model.activate_in(p_parent)
+	_local min_width << _self.get_optional_resource(:min_button_width, :integer ).default(75)
+	_local top_rc << rowcol.new(p_parent, _unset, 1, _unset, 
+				    :style, :top_level)
+	
+	_local rc << rowcol.new(top_rc, 1, _unset, _unset, 
+			    :style, :nested)
+	.items[:name_label] << label_item.new(rc, "name:")
+	.items[:name_text] << text_item.new(rc)
+	.items[:station_label] << label_item.new(rc, "Station:")
+	.items[:station_text] << text_item.new(rc)
+	_local image << smallworld_product.get_raster_image(:highlight, :ui_resources)
+	image_button_item.new_safe(rc, image, _self, :|highlight_path()|)
+	
+	_if _not .embedded?
+	_then
+		.items[:ok] << button_item.new(top_rc, "Close",
+					       _self, :|close()|,
+					       :min_width, min_width)
+	_endif 
+	_return top_rc
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point_info_model.highlight_path()
+	## Callback method from the highlight button
+	_if .supply_point _is _unset
+	_then
+		.owner.highlight(_unset)
+		_self.show_alert("Please select a supply point first")
+	_else
+		_local nf_links << .supply_point.path_to_station
+		_local links << nf_links.map(_proc(x) >> x.link _endproc )
+		_local gset << geometry_set.new_from(links)
+		.owner.highlight(gset)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point_info_model.select(p_supply_point)
+	## This method in invoked from the owner plugin to set of unset
+	## the supply_point.
+	_self.perform_safely(:|do_select()|, p_supply_point)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method supply_point_info_model.do_select(p_supply_point)
+	.supply_point << p_supply_point
+	_self.display_name()
+	_self.display_station_name()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method supply_point_info_model.display_name()
+	_if .supply_point _is _unset
+	_then
+		a_string << ""
+	_else
+		a_string << .supply_point.id.copy()
+	_endif
+	.items[:name_text].value << a_string
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point_info_model.display_station_name()
+	_if .supply_point _is _unset
+	_then
+		a_string << ""
+	_else 
+		_local station << .supply_point.feeding_station
+		_if station _is _unset
+		_then
+			a_string << "No Station found"
+		_else 
+			a_string << station
+		_endif 
+	_endif
+	.items[:station_text].value << a_string
+_endmethod
+$
