@@ -1,0 +1,124 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-04
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=basic, topic={demo})
+##
+## Demo plugin that only acts if it is visible.
+##
+def_slotted_exemplar(
+	:supply_point_embed_plugin,
+	{},
+	:plugin )
+$
+
+_pragma(classify_level=restricted)
+supply_point_embed_plugin.define_shared_constant( :databus_consumer_data_types,
+	{ :map_selection },
+	:public )
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method supply_point_embed_plugin.build_gui(p_container)
+	_local dialog << supply_point_info_model.new(_self)
+	_local gui << dialog.build_embedded_gui(p_container)
+	gui.tab_label << dialog.title
+	
+	_self.cache_dialog(:the_dialog, dialog)
+	
+	# defines the handler to invoke when self becomes
+	# visible. Initialise self as invisible.
+	gui.visible_notify_selector << handler.new(_self, :|handle_gui_visibility()|)
+	_self.handle_gui_visibility(_false)
+	
+	_return gui
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={demo})
+_method supply_point_embed_plugin.handle_gui_visibility(p_visible?)
+	## Callback method when the visibility changes.
+	
+	show("Changing visibility to:", p_visible?)
+	_if p_visible? _is _true
+	_then
+		_self.attach_to_databus()
+		_self.refresh_selection()
+	_else
+		_self.detach_from_databus()
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={demo})
+_private _method supply_point_embed_plugin.attach_to_databus()
+	_self.register_with_databus(.databus)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={demo})
+_private _method supply_point_embed_plugin.detach_from_databus()
+	.databus.remove_member(_self)
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method supply_point_embed_plugin.sw_databus_data_available(p_data_type_name, p_data)
+	## 
+	## Receives data from the editor's databus.
+	##
+	_if p_data_type_name _is :map_selection
+	_then
+		_local (map, geom_set) << (_scatter p_data)
+		_self.refresh_selection_from(geom_set)
+	_endif
+_endmethod
+$
+
+
+_pragma(classify_level=restricted)
+_private _method supply_point_embed_plugin.refresh_selection()
+	_local data << _self.databus_request_data(:map_selection)
+	_local (map, geom_set) << (_scatter data)
+	_self.refresh_selection_from(geom_set)
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_private _method supply_point_embed_plugin.refresh_selection_from(p_geom_set)
+	_local dialog << _self.get_dialog(:the_dialog)
+	_if dialog _isnt _unset
+	_then
+		_local rwo_set << p_geom_set.rwo_set()
+		_local sp << rwo_set.select(predicate.eq(:rwo_type,:supply_point)).an_element()
+		dialog.select(sp)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method supply_point_embed_plugin.highlight(p_geom_set)
+	_if p_geom_set.empty? _then _return _endif
+	
+	_self.databus_make_data_available(:geometry_to_highlight,
+					  p_geom_set)
+_endmethod
+$
+

@@ -1,0 +1,6 @@
+sleep_while_hidden_demo	1
+
+description
+	Demo to show a plugin that sleeps while it is hidden in the tabbox.
+end
+
