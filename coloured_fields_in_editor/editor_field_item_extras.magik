@@ -1,0 +1,94 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-14
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=restricted)
+## defines the list of all possible field types.
+editor_field_item.define_shared_constant(:all_possible_field_types,
+	{:alpha_field, :boolean_field, :kleenean_field, :catalogue_field,
+	 :choice_field, :date_field, :date_time_field, :text_field, :unit_field,
+	 :vector_field, :geometry_set_field, :geometry_field, :raster_geom_field,
+	 :tin_geom_field, :dataless_rwo_geometry_set_field, :owner_join_field,
+	 :choose_owner_join_field, :component_join_field, :follow_join_field,
+	 :multiple_join_field},
+	:private)
+$
+
+_pragma(classify_level=restricted)
+_method editor_field_item.build_styled_string_data(p_text_style)
+	_local data << hash_table.new()
+	_for i_type _over _self.all_possible_field_types.fast_elements()
+	_loop
+		data[i_type] << p_text_style
+	_endloop
+	_return data
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method editor_field_item.styled_string_data
+	## Return the text_styles to use for each field type.
+	>> _if _self.mandatory?
+	   _then
+		   >> _self.mandatory_styled_string_data
+	   _elif _self.readonly?
+	   _then
+		   >> _self.readonly_styled_string_data
+	   _else
+		   >> _unset 
+	   _endif
+_endmethod
+$
+
+_block
+	# Add a text style for mandatory field_items to the styles_holder exemplar.
+	string_styles_holder.add_text_style( :field_mandatory, :purple,
+					     _false, font.new_with_properties(:type, :logical,
+									      :name, :bold,
+									      :point_size, 12),
+					     _false, _false)
+_endblock
+$
+
+_block
+	# Add a text style for readonly field_items to the styles_holder exemplar.
+	string_styles_holder.add_text_style( :field_readonly, :grey,
+					     _false, font.new_with_properties(:type, :logical,
+									      :name, :fancy,
+									      :point_size, 12),
+					     _false, _false)
+_endblock
+$
+
+
+_block
+	# Cache a hash_table of text_styles to use for building editor_field_items.
+	_local data << editor_field_item.build_styled_string_data(:field_mandatory)
+	editor_field_item.define_shared_constant(:mandatory_styled_string_data,data,:public)
+_endblock
+$
+
+_block
+	# Cache a hash_table of text_styles to use for building editor_field_items.
+	_local data << editor_field_item.build_styled_string_data(:field_readonly)
+	editor_field_item.define_shared_constant(:readonly_styled_string_data,data,:public)
+_endblock
+$
+
+
