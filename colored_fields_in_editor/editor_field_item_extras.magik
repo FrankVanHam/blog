@@ -61,8 +61,7 @@ _block
 	string_styles_holder.add_text_style( :field_mandatory, :purple,
 					     _false, font.new_with_properties(:type, :logical,
 									      :name, :bold,
-									      :point_size, 12),
-					     _false, _false)
+									      :point_size, 12))
 _endblock
 $
 
@@ -71,8 +70,7 @@ _block
 	string_styles_holder.add_text_style( :field_readonly, :grey,
 					     _false, font.new_with_properties(:type, :logical,
 									      :name, :fancy,
-									      :point_size, 12),
-					     _false, _false)
+									      :point_size, 12))
 _endblock
 $
 
