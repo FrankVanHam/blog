@@ -1,0 +1,70 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-16
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=restricted)
+## Special value_manager for validating the id of a supply_point.
+def_slotted_exemplar( :supply_point_id_value_manager,
+                      {},
+		      :field_item_value_manager)
+$
+
+condition.define_condition(:supply_point_id_format_error, :error, {:string})
+$
+
+message_handler.new(:condition).create_message(:supply_point_id_format_error,:en_gb, "The format of the supply_point id (#1) is not valid. Please change it to a format like CAM-909141-SP")
+$
+
+_pragma(classify_level=restricted)
+_method supply_point_id_value_manager.validate(p_value)
+	##
+	## Validate that the string is in the format of
+	## CAM-909141-SP. First three characters, then 6 digits ended
+	## with SP.
+	_super.validate(p_value)
+
+	_if p_value _is _unset _then _return _endif 
+
+	ok? << _true   
+	ok? _andif<< (p_value.size = 13)
+	#CAM
+	_for i_index _over range(1,3)
+	_loop
+		ok? _andif<< (p_value[i_index].value >= 65)
+		ok? _andif<< (p_value[i_index].value <= 90)
+	_endloop
+	# -
+	ok? _andif<< (p_value[4] = %-)
+	# 909141
+	_for i_index _over range(5,10)
+	_loop
+		ok? _andif<< (p_value[i_index].digit?)
+	_endloop
+	
+	# SP
+	ok? _andif<< (p_value[12] = %S)
+	ok? _andif<< (p_value[13] = %P)
+	
+	_if _not ok?
+	_then 	
+		condition.raise(:supply_point_id_format_error, :string, p_value)
+	_endif 
+_endmethod
+$
+
