@@ -1,0 +1,9 @@
+in_place_toggle_editor
+in_place_toggle_field_editor
+in_place_spin_field_editor
+in_place_image_choice_field_editor
+
+beer_extras
+
+proxy_edit_action_extras
+in_place_edit_manager_mods

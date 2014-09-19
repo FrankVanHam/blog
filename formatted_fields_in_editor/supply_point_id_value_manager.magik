@@ -40,7 +40,18 @@ _method supply_point_id_value_manager.validate(p_value)
 	_super.validate(p_value)
 
 	_if p_value _is _unset _then _return _endif 
+	
+	_local ok? << _self.is_valid?(p_value)
+	
+	_if _not ok?
+	_then 	b
+		condition.raise(:supply_point_id_format_error, :string, p_value)
+	_endif 
+_endmethod
+$
 
+_pragma(classify_level=restricted)
+_private _method supply_point_id_value_manager.is_valid?(p_value)
 	ok? << _true   
 	ok? _andif<< (p_value.size = 13)
 	#CAM
@@ -61,10 +72,8 @@ _method supply_point_id_value_manager.validate(p_value)
 	ok? _andif<< (p_value[12] = %S)
 	ok? _andif<< (p_value[13] = %P)
 	
-	_if _not ok?
-	_then 	
-		condition.raise(:supply_point_id_format_error, :string, p_value)
-	_endif 
+	_return ok?
 _endmethod
 $
+
 

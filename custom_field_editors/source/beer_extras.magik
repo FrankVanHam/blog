@@ -1,0 +1,33 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-19
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+
+_pragma(classify_level=basic)
+_method beer.styled_string_for_field_editor(p_field_descriptor, p_value, p_string)
+	## Return a styled string to display P_VALUE in the field editor.
+	_if p_value _is _unset
+	_then
+		style << styled_string.new(:image, {:empty, :custom_field_editors_demo})
+	_else
+		style << styled_string.new(:image, {p_value.as_symbol(), :custom_field_editors_demo}, p_string)
+	_endif
+	_return style
+_endmethod
+$

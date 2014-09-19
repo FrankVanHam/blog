@@ -1,0 +1,67 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-19
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=restricted)
+##
+## Demo choice field editor that uses images and strings to
+## show the enumerated values.
+def_slotted_exemplar( :in_place_image_choice_field_editor,
+                      { },
+		      :in_place_choice_field_editor )
+$
+
+# Register the field_editor with the editor_manager so that the
+# user can select it.
+editor_manager.register_field_editor(
+                      :in_place_image_choice_field_field_editor,
+                      _unset, { :choice_field } )
+$
+
+_block
+	_local mh << message_handler.new(:editor_descriptions)
+	mh.create_message(:in_place_image_choice_field_editor, :en_gb, "Choice item with images and text")
+	
+	mh << message_handler.new(:in_place_image_choice_field_editor)
+	mh.create_message(:value,:en_gb, "Select to choose a value")
+_endblock
+$
+
+_pragma(classify_level=restricted)
+_method in_place_image_choice_field_editor.items
+	## The main method that supplies the items to show. The items
+	## are a list of vectors of 2. The first item is the value, the
+	## second is the representation. The second will be transformed
+	## into a styled_string to make images for the dropdown list.
+	
+	_local items << _super.items
+
+	_local new_items << rope.new_for(items.size)
+	_local rec << _self.editor_work_record()
+	_local fd << .field_item.field_descriptor
+	
+	_for i_vec _over items.fast_elements()
+	_loop
+		(value, string) << (_scatter i_vec)
+		style << rec.styled_string_for_field_editor(fd, value, string)
+		new_items.add({value,style})
+	_endloop
+	_return new_items
+_endmethod
+$

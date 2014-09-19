@@ -1,0 +1,130 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-17
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=restricted)
+## Demo field_editor that shows an editor with 2 buttons, one
+## to increase the value and one to decrease the value.
+def_slotted_exemplar( :in_place_spin_field_editor,
+                      {
+			      {:min, _unset},
+			      {:max, _unset}
+		      },
+		      :in_place_alpha_field_editor )
+$
+
+# Register the field_editor with the editor_manager so that the
+# user can select it.
+editor_manager.register_field_editor(
+                      :in_place_spin_field_editor,
+                      _unset, { :alpha_field } )
+$
+
+_block
+	_local mh << message_handler.new(:editor_descriptions)
+	mh.create_message(:in_place_spin_field_editor, :en_gb, "Editor with a spin")
+	
+	mh << message_handler.new(:in_place_spin_field_editor)
+	mh.create_message(:value,:en_gb, "Use the spin to set values")
+	mh.create_message(:left,:en_gb, "Decrease value")
+	mh.create_message(:right,:en_gb, "Increase value")
+_endblock
+$
+
+
+_pragma(classify_level=restricted)
+_method in_place_spin_field_editor.add_actions()
+	## Create the actions that will make up the gui. Note that the
+	## order in whick the action are creaed also define the order
+	## in the field_editor.
+	_self.add_action(sw_edit_action.new(:left,
+					    :engine, _self,
+					    :image, {:left_12x12, _self.module_name},
+					    :action_message, :|spin_left()|))
+	_super.add_actions()
+	_self.add_action(sw_edit_action.new(:right,
+					    :engine, _self,
+					    :image, {:right_12x12, _self.module_name},
+					    :action_message, :|spin_right()|))
+_endmethod
+$
+
+
+_pragma(classify_level=restricted)
+_method in_place_spin_field_editor.spin_left()
+	_local num << _self.number_value
+	num -<< 1
+	_if .min _is _unset _orif num >= .min
+	_then 
+		_self.action(:value).value << num
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method in_place_spin_field_editor.spin_right()
+	_local num << _self.number_value
+	num +<< 1
+	_if .max _is _unset _orif num <= .max
+	_then 
+		_self.action(:value).value << num
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_private _method in_place_spin_field_editor.number_value
+	# Return the numerical value. Attempt to keep it an integer if possible.
+	_local num << _self.action(:value).value.default(0).as_number().default(0)
+	_if num = num.rounded
+	_then
+		num << num.rounded
+	_endif
+	_return num
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method in_place_spin_field_editor.field_item << p_field_item
+	## Set the field editor and determines if the field has some
+	## intrinsik min and max value.
+	_super.field_item << p_field_item
+	_self.assign_min_max()
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_private _method in_place_spin_field_editor.assign_min_max()
+	_local domains << .field_item.field_descriptor.type.domains
+	_if domains.empty?.not
+	_then
+		_for i_domain _over domains.fast_elements()
+		_loop
+			_if i_domain.minimum _isnt _unset
+			_then
+				.min << i_domain.minimum
+			_endif
+			_if i_domain.maximum _isnt _unset
+			_then
+				.max << i_domain.maximum
+			_endif
+		_endloop
+	_endif 
+_endmethod
+$

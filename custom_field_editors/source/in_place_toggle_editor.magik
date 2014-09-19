@@ -1,0 +1,74 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-17
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=restricted)
+##
+## In place editor that works with a toggle item to set/get
+## boolean values.
+#
+# Sublcasses from :in_place_value_editor that is build around
+# an action named :value that holds and sets the value. Self
+# will create the action :value with a toggle_item.
+def_slotted_exemplar(:in_place_toggle_editor,
+{},
+{:in_place_value_editor} )
+$
+
+_pragma(classify_level=restricted)
+_private _method in_place_toggle_editor.add_actions()	
+	## Create the actions that will appear in this
+	## in_place_editor. Their corresponding controls  will be
+	## displayed in the order in which they are added.  
+ 
+	_self.add_action(sw_edit_action.new(:value,
+					    :engine,               _self,
+					    :value_change_message, :|value_changed()|,
+					    :toolbar_control,      {:toggle_item, :label, "" }))
+	_self.add_action(sw_edit_action.new(:label,
+					    :enabled?, _false,
+					    :toolbar_control,      {:text_item, :max_length, 5 }))
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method in_place_toggle_editor.manage_actions()
+	## Invoked when visibility changes. Will set the label.
+	_super.manage_actions()
+	_self.set_label(_self.undo_value)
+_endmethod
+$
+
+
+_pragma(classify_level=restricted)
+_method in_place_toggle_editor.value_changed(p_new_value)
+	## Invoked when the value has changed. Will update the label.
+	_super.value_changed(p_new_value)
+	_self.set_label(p_new_value)
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_private _method in_place_toggle_editor.set_label(p_value)
+	## Sets the label.
+	_local string << string_styles_holder.format(p_value,_self)
+	_self.action(:label).value << string
+_endmethod
+$
+

@@ -1,0 +1,60 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-09-17
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=restricted)
+##
+## Demo field_editor that works with a toggle item to set the
+## value.
+def_slotted_exemplar( :in_place_toggle_field_editor,
+                      {
+			      {:field_item, _unset, :writable}
+		      },
+		      { :in_place_toggle_editor, :in_place_field_editor_mixin } )
+$
+
+# Register the field_editor with the editor_manager so that the
+# user can select it.
+editor_manager.register_field_editor(
+                      :in_place_toggle_field_editor,
+                      _unset, { :boolean_field, :kleenean_field } )
+$
+
+_block
+	_local mh << message_handler.new(:editor_descriptions)
+	mh.create_message(:in_place_toggle_field_editor, :en_gb, "Editor boolean values")
+	
+	mh << message_handler.new(:in_place_toggle_field_editor)
+	mh.create_message(:value,:en_gb, "Toggle to switch between True and False")
+_endblock
+$
+
+_pragma(classify_level=advanced)
+_method in_place_toggle_field_editor.readonly? << a_value
+	## Calls the readonly?<< method defined by in_place_field_editor_mixin.
+	_return _super(in_place_field_editor_mixin).readonly? << a_value
+_endmethod
+$
+
+_pragma(classify_level=advanced)
+_method in_place_toggle_field_editor.readonly?
+	## Returns the readonly status defined by in_place_field_editor_mixin.
+	_return _super(in_place_field_editor_mixin).readonly?
+_endmethod
+$
