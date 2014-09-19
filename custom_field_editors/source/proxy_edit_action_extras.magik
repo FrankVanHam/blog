@@ -28,8 +28,7 @@ proxy_edit_action.define_shared_constant( :valid_constructors,
 						  :|add_image_button_item()|,
 						  :|add_image_item()|,
 						  :|add_text_item()|,
-						  :|add_toggle_item()|,
-						  :|add_image_choice_item()|
+						  :|add_toggle_item()|
 					  },
 					  :private)
 $

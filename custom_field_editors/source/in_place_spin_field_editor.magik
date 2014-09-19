@@ -20,7 +20,7 @@ $
 
 _pragma(classify_level=restricted)
 ## Demo field_editor that shows an editor with 2 buttons, one
-## to increase the value and one to decrease the value.
+## to decrease the value and one to increase the value.
 def_slotted_exemplar( :in_place_spin_field_editor,
                       {
 			      {:min, _unset},
@@ -41,7 +41,7 @@ _block
 	mh.create_message(:in_place_spin_field_editor, :en_gb, "Editor with a spin")
 	
 	mh << message_handler.new(:in_place_spin_field_editor)
-	mh.create_message(:value,:en_gb, "Use the spin to set values")
+	mh.create_message(:value,:en_gb, "Use the buttons to set values")
 	mh.create_message(:left,:en_gb, "Decrease value")
 	mh.create_message(:right,:en_gb, "Increase value")
 _endblock
