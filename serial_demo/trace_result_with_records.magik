@@ -1,0 +1,105 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-10-02
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+remex(:trace_result_with_records)
+$
+
+_pragma(classify_level=basic, topic={demo})
+def_slotted_exemplar(:trace_result_with_records,
+	{
+		{:average, _unset},
+		{:description, _unset},
+		{:roundabouts, _unset}
+	},
+	{:serial_structure_mixin})
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method trace_result_with_records.new_demo()
+	_return _clone.init_demo()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method trace_result_with_records.init_demo()
+	.average << 12.43
+	.description << "This is a cereal demo"
+	.roundabouts << _self.get_some_roundabouts()
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method trace_result_with_records.get_some_roundabouts()
+	_local col << gis_program_manager.databases[:gis].collections[:roundabout]
+	_local str << col.read_stream()
+	_local list << rope.new()
+	_over range(1,5)
+	_loop
+		list.add(str.get())
+	_endloop
+	_return list 
+_endmethod
+$
+
+
+###############
+# SERIAL METHODS
+###############
+$
+
+trace_result_with_records.define_shared_constant(:serial_structure, :slotted, :public)
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method trace_result_with_records.serial_slots()
+	_local keys   << {:average, :description, :roundabouts}
+	_local values << {.average, .description, _self.serial_roundabouts}
+	_return keys, values
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method trace_result_with_records.serial_roundabouts
+	_local list << rope.new_for(.roundabouts.size)
+	_for i_rec _over .roundabouts.fast_elements()
+	_loop
+		list.add(serial_record_lookup.new(i_rec))
+	_endloop
+	_return list 
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method trace_result_with_records.new_from_serial(keys,values)
+	_return _clone.init_from_serial(_scatter values)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method trace_result_with_records.init_from_serial(average, description, roundabouts)
+	.average << average
+	.description << description
+	.roundabouts << roundabouts
+	_return _self 
+_endmethod
+$
+

@@ -1,0 +1,76 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-10-02
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+remex(:trace_result)
+$
+
+_pragma(classify_level=basic, topic={demo})
+def_slotted_exemplar(:trace_result,
+	{
+		{:average, _unset},
+		{:description, _unset}
+	},
+	{:serial_structure_mixin})
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method trace_result.new_demo()
+	_return _clone.init_demo()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method trace_result.init_demo()
+	.average << 12.43
+	.description << "This is a cereal demo"
+	_return _self 
+_endmethod
+$
+
+###############
+# SERIAL METHODS
+###############
+$
+
+trace_result.define_shared_constant(:serial_structure, :slotted, :public)
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method trace_result.serial_slots()
+	_local keys   << {:average, :description}
+	_local values << {.average, .description}
+	_return keys, values
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method trace_result.new_from_serial(keys,values)
+	_return _clone.init_from_serial(_scatter values)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method trace_result.init_from_serial(average, description)
+	.average << average
+	.description << description
+	_return _self 
+_endmethod
+$
+

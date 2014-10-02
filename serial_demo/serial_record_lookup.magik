@@ -1,0 +1,61 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-10-02
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=basic, topic={demo})
+def_slotted_exemplar(:serial_record_lookup,
+	{
+		{:urn, _unset}
+	},
+	{:serial_structure_mixin})
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method serial_record_lookup.new(p_ds_record)
+	_return _clone.init(p_ds_record)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method serial_record_lookup.init(p_ds_record)
+	.urn << urn_manager.get_urn_from_object(p_ds_record)
+	_return _self 
+_endmethod
+$
+
+###############
+# SERIAL METHODS
+###############
+$
+
+serial_record_lookup.define_shared_constant(:serial_structure, :slotted, :public)
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method serial_record_lookup.serial_slots()
+	_return {:urn}, {.urn}
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method serial_record_lookup.new_from_serial(keys,values)
+	_local urn << values[1]
+	_return urn_manager.get_object_from_urn(urn)
+_endmethod
+$
