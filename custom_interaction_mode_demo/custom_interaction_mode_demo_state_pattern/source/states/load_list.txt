@@ -1,0 +1,8 @@
+cim_base_state
+cim_start_drag_state
+cim_drag_state
+cim_end_drag_state
+cim_move_state
+cim_empty_move_state
+cim_start_state
+

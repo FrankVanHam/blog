@@ -1,0 +1,149 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-10-05
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+#remex(:cim_drag_state)
+$
+_pragma(classify_level=basic, topic={demo})
+def_slotted_exemplar(:cim_drag_state,
+	{
+		{:cable, _unset},
+		{:cable_sectors, _unset},
+		{:drag_sectors, _unset}
+	},
+	:cim_base_state)
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_drag_state.init(owner, cable, cable_sectors)
+	_if cable_sectors _is _unset _then condition.raise(:error,:string,"Need sectors") _endif 
+	.cable << cable
+	.cable_sectors << cable_sectors
+	.drag_sectors << .cable_sectors
+	_return _super.init(owner)
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_drag_state.handle_drag_action(action,start_coord,end_coord,a_window)
+	_self.dragging(a_window, end_coord)
+	_return _self
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_drag_state.handle_change_from_drag_action(action,start_coord,end_coord,a_window)
+	_return _self
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_drag_state.handle_end_drag_action(action,start_coord,end_coord,a_window)
+
+	tr << _self.prep_dragging(end_coord)
+	_self.do_abort(a_window, end_coord)
+	new_state << cim_end_drag_state.new(.owner, .cable, tr)
+	new_state << new_state.handle_end_drag_action(action,start_coord,end_coord,a_window)
+	_return new_state
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_drag_state.handle_abort_action(action,start_coord,end_coord,a_window)
+	_self.abort_drag(a_window, end_coord)
+	_return _self
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_drag_state.prep_dragging(end_coord)
+	## Support function that decides what the transform will
+	## be. This method does some basic math to find out the
+	## perpendicular distance the new point is to the cable.
+	
+	near_loc << .cable_sectors.segpoint_location_near(end_coord)
+	dir << .cable_sectors.direction_at_location(near_loc)
+	alfa << dir.theta
+	beta << end_coord.angle_to(near_loc)
+	
+	theta << alfa-beta
+	dist << end_coord.distance_to(near_loc) * sin(theta)
+	
+	#dist << (dist.rounded _div 2000) * 2000
+	
+	angle << _if dist > 0
+		 _then >> alfa + float.half_pi
+		 _else >> alfa - float.half_pi
+		 _endif 
+	tr << transform.new_polar(dist.abs, angle)
+	_return tr
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_drag_state.dragging(a_window, end_coord)
+	## Invoked when dragging the cable. So it better be fast.
+	tr << _self.prep_dragging(end_coord)
+	sec << .cable_sectors.transformed(tr)
+	_self.xor_drag_sectors(a_window)
+	.drag_sectors << sec
+	_self.xor_drag_sectors(a_window)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_drag_state.abort_drag(a_window, end_coord)
+	## Abort the dragging. Stop xoring.
+	_self.do_abort(a_window, end_coord)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_drag_state.do_abort(a_window, end_coord)
+	## stop xoring.
+	_self.xor_drag_sectors(a_window)
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_drag_state.xor_cable(a_window)
+	.owner.renderer.xor_cable(a_window,.cable_sectors)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_drag_state.xor_drag_sectors(a_window)
+	.owner.xor_drag_sectors(a_window, .drag_sectors)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_drag_state.redraw_after_refresh(a_window)
+	## Invoked when the user refreshed the screen during my
+	## mode. We have to redraw were we were because the fresh has
+	## creared the screen.
+	_if .drag_sectors _isnt _unset
+	_then
+		_self.xor_drag_sectors(a_window)
+	_endif 
+_endmethod
+$

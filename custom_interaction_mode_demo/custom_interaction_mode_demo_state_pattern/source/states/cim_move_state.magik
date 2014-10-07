@@ -1,0 +1,125 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-10-05
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+#remex(:cim_move_state)
+$
+
+_pragma(classify_level=basic, topic={demo})
+def_slotted_exemplar(:cim_move_state,
+	{
+		{:cable, _unset},
+		{:cable_sectors, _unset}
+	},
+	:cim_base_state)
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_move_state.init(owner,cable, sectors)
+	_if cable _is _unset _then condition.raise(:error,:string, "Need cable") _endif 
+	_self.set_cable(cable, sectors)
+	_return _super.init(owner)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_move_state.handle_move_action(action,start_coord,end_coord,a_window)
+	cable << _self.move_and_find_cable(a_window, end_coord)
+	_if cable _isnt _unset
+	_then
+		new_state << _self
+	_else
+		new_state << cim_empty_move_state.new(.owner)
+	_endif
+	_return new_state
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_move_state.handle_start_drag_action(action,start_coord,end_coord,a_window)
+	new_state << cim_start_drag_state.new(.owner, .cable, .cable_sectors)
+	new_state << new_state.handle_start_drag_action(action,start_coord,end_coord,a_window)
+	_return new_state
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_move_state.handle_press_action(action,start_coord,end_coord,a_window)
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_move_state.move_and_find_cable(a_window, end_coord)
+	## invoked on every move during the search for a cable. So this
+	## better be fast.
+
+	# chaining interaction_modes leads to cursor problems. So here
+	# is a simple fix.
+	.owner.fixup_cursor(a_window)
+	
+	(cable, sectors) << _self.find_cable(end_coord)
+	_if cable _is _unset
+	_then
+		_self.xor_cable(a_window)
+		.cable << _unset 
+	_else
+		_if .cable <> cable
+		_then
+			_self.xor_cable(a_window)
+			_self.set_cable(cable, sectors)
+			_self.xor_cable(a_window)
+		_endif
+	_endif 
+	_return cable
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_move_state.xor_for_find(a_window)
+	_self.xor_cable(a_window)
+_endmethod
+$
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_move_state.xor_cable(a_window)
+	.owner.xor_cable(a_window, .cable_sectors)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_move_state.set_cable(p_cable, sectors)
+	## Store the cable.
+	.cable << p_cable
+	.cable_sectors << sectors
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_move_state.find_cable(end_coord)
+	_return .owner.find_cable(end_coord)
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_move_state.redraw_after_refresh(a_window)
+	_self.xor_cable(a_window) 
+_endmethod
+$

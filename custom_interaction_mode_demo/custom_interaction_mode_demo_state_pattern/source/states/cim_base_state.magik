@@ -1,0 +1,99 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-10-05
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+#remex(:cim_base_state)
+$
+_pragma(classify_level=basic, topic={demo})
+def_slotted_exemplar(:cim_base_state,
+	{
+		{:owner, _unset}
+	})
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.new(owner, _gather args)
+	_return _clone.init(owner, _scatter args)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_base_state.init(owner)
+	.owner << owner
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.redraw_after_refresh(a_window)
+	
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.handle_move_action()
+	_return _self.start_state()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.handle_abort_action()
+	_return _self.start_state()
+_endmethod
+$
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.handle_change_from_drag_action()
+	_return _self.start_state()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.handle_start_drag_action()
+	_return _self.start_state()
+_endmethod
+$
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.handle_press_action()
+	_return _self.start_state()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.handle_drag_action()
+	_return _self.start_state()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.handle_end_drag_action()
+	_return _self.start_state()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method cim_base_state.start_state()
+	_return cim_start_state.new(.owner)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_base_state.handled?
+	_return _true  
+_endmethod
+$

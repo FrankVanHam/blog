@@ -1,0 +1,17 @@
+<config>
+
+  <plugins>
+      <plugin name="custom_mode" class_name="custom_interaction_mode_plugin"/>     
+      <plugin name="maps" class_name="map_manager" >
+	  <interaction_modes>
+	      <mode name="select"/>
+	      <mode name="geometry"/>
+	      <mode name="zoom_in"/>
+	      <mode name="zoom_out"/>
+	      <mode name="pan"/>
+	      <mode name="custom_mode.drag_cable"/>
+	      <cycle_sequence modes="select,geometry"/>
+	  </interaction_modes>
+	  <!-- and the rest -->
+      </plugin>
+</config>

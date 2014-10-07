@@ -1,0 +1,362 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-10-03
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+#remex(:custom_interaction_mode_plugin)
+$
+
+_pragma(classify_level=basic, topic={demo})
+## Demo plugin that creates an internaction mode to drag cables
+## in a perpendicular motion.
+def_slotted_exemplar(:custom_interaction_mode_plugin,
+	{
+		{:cable,            _unset},
+		{:cable_sectors,    _unset},
+		{:drag_sectors,     _unset},
+		{:interaction_mode, _unset},
+		{:renderer,         _unset},
+		{:finder,           _unset}
+	},
+	{:plugin, :custom_interaction_mode_mixin})
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.init(_gather args)
+	.renderer << cim_renderer.new()
+	.finder << cim_cable_finder.new()
+	_return _super.init(_scatter args)
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method custom_interaction_mode_plugin.get_interaction_mode( name, logical_name )
+	## Return the interaction mode that will find and drag the
+	## cable. Set the cursors, move actions, event handlers and the lot.
+	_if logical_name _isnt :drag_cable _then _return _unset _endif
+	
+	m << interaction_mode.new( :drag_cable, _unset )
+	m.prompt_string << "Click and drag to move a cable in a perpendicular motion" #Prompt in the statusbar
+
+	# When moving around serching for a cable, the find_csble
+	# crosshair will be the cursor.
+	m.set_cursor( 0, "find_cable", _self.module_name )
+	# When dragging the cable, the hand cursor will be used
+	m.set_drag_cursor( 0, "hand", :interaction_handler)
+	# When moving around on the screen, the :move action will be
+	# send on every move.
+	m.set_move_actions(0, :move)
+	# When the the left button is clicked, the :press action is send.
+	m.set_press_action(:left, 0, :press)
+	# disable the xor worker to avoid a rectangle being drawn during dragging.
+	m.set_xor_worker(_self, _unset)
+	# setup the drag actions, set the actions that are send during
+	# the drag.
+	m.set_drag_actions(:left, 0, {:start_drag, :drag, :end_drag, :change_from_drag})
+	# handle th escape key because the interaction_handler will
+	# abort the actions rigorously.
+	m.set_key_action(%escape, 0, :abort)
+
+	# Installs the event handlers
+	m.add_event_handler( :action, _self, { :perform_safely|()|, :|handle_drag_action()| } )
+	m.add_event_handler( :start_interaction, _self, :|start()|)
+	m.add_event_handler( :end_interaction,   _self, :|end()|)
+	
+	.interaction_mode << m
+	_return m
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo}) 
+_method custom_interaction_mode_plugin.get_interaction_mode_action(mode_name)
+	## Return the sw_action that defines the button that activates
+	## our mode.
+	_if mode_name _is :drag_cable
+	_then
+		_return sw_action.new(mode_name,
+				      :engine, _self,
+				      :tooltip, "Drag a cable to a new position",
+				      :image, { mode_name, _self.module_name },
+				      :value, mode_name )
+	_endif 
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method custom_interaction_mode_plugin.handle_drag_action(mode,start_coord,end_coord,a_window)
+	## the master method that is invoked on every event once the
+	## the mode has started. Return :event_handled to indicate that
+	## that no other handlers need to do anthing anymore.
+	_local handled? << _true 
+	_if mode _is :move
+	_then
+		_self.handle_move_action(a_window, end_coord)
+	_else
+		_if .cable _isnt _unset
+		_then 
+			_if mode _is :start_drag
+			_then
+				_self.start_drag(a_window)
+			_elif mode _is :press
+			_then
+				
+			_elif mode _is :drag 
+			_then
+				_self.dragging(a_window, end_coord)
+			_elif mode _is :end_drag
+			_then
+				_self.end_drag(a_window, end_coord)
+			_elif mode _is :abort
+			_then
+				_self.abort_drag(a_window, end_coord)
+			_else
+				handled? << _false 
+			_endif
+		_else
+			handled? << _false 
+		_endif
+	_endif
+	_if handled? _then _return :event_handled _endif 
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.start_drag(a_window)
+	## invoked when the dragging start. Will xor the cable for the
+	## last time to remove it from the screen and then the drag xor
+	## will start.
+	
+	_self.xor_cable(a_window)
+	
+	.drag_sectors << .cable_sectors
+	_self.xor_drag_sectors(a_window)	
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.prep_dragging(end_coord)
+	## Support function that decides what the transform will
+	## be. This method does some basic math to find out the
+	## perpendicular distance the new point is to the cable.
+	
+	near_loc << .cable_sectors.segpoint_location_near(end_coord)
+	dir << .cable_sectors.direction_at_location(near_loc)
+	alfa << dir.theta
+	beta << end_coord.angle_to(near_loc)
+	
+	theta << alfa-beta
+	dist << end_coord.distance_to(near_loc) * sin(theta)
+	
+	#dist << (dist.rounded _div 2000) * 2000
+	
+	angle << _if dist > 0
+		 _then >> alfa + float.half_pi
+		 _else >> alfa - float.half_pi
+		 _endif 
+	tr << transform.new_polar(dist.abs, angle)
+	_return tr
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.dragging(a_window, end_coord)
+	## Invoked when dragging the cable. So it better be fast.
+	tr << _self.prep_dragging(end_coord)
+	sec << .cable_sectors.transformed(tr)
+	_self.xor_drag_sectors(a_window)
+	.drag_sectors << sec
+	_self.xor_drag_sectors(a_window)
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.end_drag(a_window, end_coord)
+	## Invoked when the dragging has ended. So this will perform
+	## the transformation.
+	cable << .cable
+	tr << _self.do_abort(a_window, end_coord)
+	
+	_local trans << transform_transaction.new(cable.dataset,
+						  geometry_set.new_with(
+							  cable.centreline),
+						  tr)
+	trans.run()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.abort_drag(a_window, end_coord)
+	## Abort the dragging. Stop xoring.
+	_self.do_abort(a_window, end_coord)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.do_abort(a_window, end_coord)
+	## stop xoring.
+	tr << _self.prep_dragging(end_coord)
+	_self.xor_drag_sectors(a_window)
+	.drag_sectors << _unset
+	_self.unset_cable()
+	_return tr
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.handle_move_action(a_window, end_coord)
+	## invoked on every move during the search for a cable. So this
+	## better be fast.
+	.interaction_mode.fixup_cursor(a_window)
+	cable << _self.find_cable(end_coord)
+	_if cable _is _unset
+	_then
+		_if .cable _isnt _unset
+		_then
+			_self.xor_cable(a_window)
+			_self.unset_cable()
+		_endif
+	_else
+		_if .cable _isnt _unset
+		_then 
+			_if .cable <> cable
+			_then
+				_self.xor_cable(a_window)
+				_self.set_cable(cable)
+				_self.xor_cable(a_window)
+			_endif
+		_else
+			_self.set_cable(cable)
+			_self.xor_cable(a_window)
+		_endif 
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.set_cable(p_cable)
+	## Store the cable.
+	.cable << p_cable
+	.cable_sectors << .cable.centreline.sectors
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.unset_cable()
+	## Clear the cable.
+	.cable << _unset
+	.cable_sectors << _unset
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.find_cable(end_coord)
+	_return .finder.find_cable(end_coord)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.redraw_after_refresh(p_window)
+	## Invoked when the user refreshed the screen during my
+	## mode. We have to redraw were we were because the fresh has
+	## creared the screen.
+	_if .drag_sectors _isnt _unset
+	_then
+		_self.xor_drag_sectors(p_window)
+	_elif .cable _isnt _unset
+	_then
+		_self.xor_cable(p_window)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.xor_cable(a_window)
+	## Shows a fat yellow line over the cable to indicate that that
+	## is the nearest one right now.
+	.renderer.xor_cable(a_window, .cable_sectors)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method custom_interaction_mode_plugin.xor_drag_sectors(a_window)
+	.renderer.xor_drag_sectors(a_window, .drag_sectors)
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method custom_interaction_mode_plugin.start(mode)
+	## Make self dependent on the document to catch the refresh
+	## actions. Also chain my interaction handler to the :pan handler.
+	
+	_local handler << mode.framework
+	_local map_gui << handler.framework
+	map_gui.document.add_dependent(_self, :post_render)
+	
+	_local chain_mode << handler.mode(:pan)
+	mode.chain_to << chain_mode
+_endmethod
+$
+_pragma(classify_level=basic, topic={demo})
+_method custom_interaction_mode_plugin.end(mode)
+	## remove dependency on the document.
+	_local handler << mode.framework
+	_local map_gui << handler.framework
+	map_gui.document.remove_dependent(_self)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method custom_interaction_mode_plugin.note_change(p_map_view, p_what)
+	_if p_what _is :post_render
+	_then
+		_self.redraw_after_refresh(p_map_view.window)
+	_endif 
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method custom_interaction_mode_plugin.terminate()
+	## Release the resources.
+	.finder.discard()
+	_return _super.terminate()
+_endmethod
+$
+
+
+_pragma(classify_level=restricted)
+_method interaction_mode.fixup_cursor(a_window)
+	## Set the current cursor on A_WINDOW if the cursor is
+	## different that what we expect it to be.
+	_if a_window _isnt _unset _andif
+	    a_window.cursor <> .cursors[0]
+	_then
+		a_window.cursor << .cursors[0]
+	_endif	
+_endmethod
+$
+
+

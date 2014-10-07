@@ -1,0 +1,54 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-10-05
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+#remex(:cim_end_drag_state)
+$
+_pragma(classify_level=basic, topic={demo})
+def_slotted_exemplar(:cim_end_drag_state,
+	{
+		{:cable,     _unset},
+		{:transform, _unset}
+	},
+	:cim_base_state)
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_end_drag_state.init(owner, cable, transform)
+	.cable << cable
+	.transform << transform
+	_return _super.init(owner)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_end_drag_state.handle_end_drag_action(action,start_coord,end_coord,a_window)
+	_self.end_drag(a_window, end_coord)
+	new_state << cim_start_state.new(.owner)
+	_return new_state
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_method cim_end_drag_state.end_drag(a_window, end_coord)
+	## Invoked when the dragging has ended. So this will perform
+	## the transformation.
+	.owner.transform_cable(.cable, .transform)
+_endmethod
+$
