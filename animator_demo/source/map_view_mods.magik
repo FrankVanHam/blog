@@ -27,13 +27,16 @@ $
 #
 # This is a vital piece for the animation because this is the
 # spot where the animator is told that the map starts and stops
-# rendering. Unfortunately in 4.3 there is usable change
+# rendering. Unfortunately in 4.3 there is not usable change
 # notification or event or whatever...
 #
 # As far as i have noticed there are 2 tracks for
 # run_controlled_render(). Either the sequence
 # :primary_render,:post_render,:transient_render is send or 
 # a single :transient_render is send.
+#
+# So both :primary_render and :transient_render can start a
+# render action. :transient_render will always end the render sequence.
 # 
 _pragma(classify_level=restricted)
 _method map_view.run_controlled_render(to_do, _gather args)
@@ -59,7 +62,7 @@ $
 
 #
 # Dragging is something different. Upon the start of the drag
-# the animation is informed that something is about the
+# the animation is informed that something is about to
 # change. The animation is stopped. When the drag stops the
 # normal refresh takes over.
 #

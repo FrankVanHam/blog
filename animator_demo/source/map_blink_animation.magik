@@ -59,7 +59,7 @@ _endmethod
 $
 
 _pragma(classify_level=restricted, topic={demo})
-_private _method map_blink_animation.pixel_box
+_private _method map_blink_animation.base_pixel_box
 	_return pixel_bounding_box.new_with_size(0,0,40,40)
 _endmethod
 $
@@ -68,21 +68,27 @@ $
 _pragma(classify_level=restricted, topic={demo})
 _private _method map_blink_animation.fill_image_cache(p_cache)
 
-	_local pb << _self.pixel_box
+	_local pb << _self.base_pixel_box
 	_local pixel_midx << pb.width _div 2
 	_local pixel_midy << pb.height _div 2
-	
-	#mem_cv.drawing_style << drawing_style
-	outer_style << fill_style.new_with_properties(:foreground_colour,
-		colour.new_with_properties(:red,209,:green,227,:blue,255,:scale,255))
+
+	# Note that the wash_pattern only works if the map view is
+	# setup to use Advanced Map Drawing.
+	outer_style << fill_style.new_with_properties(
+			       :wash_percent,
+			       50,
+			       :foreground_colour,
+			       colour.new_with_properties(:red,209,:green,227,:blue,255,:scale,255))
 	middle_style << fill_style.new_with_properties(:foreground_colour,
-		colour.new_with_properties(:red,77,:green,144,:blue,254,:scale,255))
-	white_line_style << line_style.new_with_properties(:width, 1,
-							   :foreground_colour,
-							   colour.called(:white)) 
-	grey_line_style << line_style.new_with_properties(:width, 1,
-							   :foreground_colour,
-		colour.new_with_properties(:red,141,:green,149,:blue,161,:scale,255))
+						       colour.new_with_properties(:red,77,:green,144,:blue,254,:scale,255))
+	white_line_style << line_style.new_with_properties(
+				    :width, 1,
+				    :foreground_colour,
+				    colour.called(:white)) 
+	grey_line_style << line_style.new_with_properties(
+				   :width, 1,
+				   :foreground_colour,
+				   colour.new_with_properties(:red,141,:green,149,:blue,161,:scale,255))
 	_for i _over range(1,4)
 	_loop		
 		_local mem_cv << memory_canvas.new(pb.width, pb.height)
@@ -110,13 +116,17 @@ $
 
 _pragma(classify_level=advanced)
 _method map_blink_animation.draw()
-	#_local drawing_style << property_list.new_with(:classic_drawing?,_false,:alpha_blend_washes?,_true)
+	## Draw on the mapview windows. Return 2 results
+	## 1: a list of pixel_bounding_boxes of the locations where
+	## self has drawn.
+	## the time to wait to be drawn again. Return _unset to stop
+	## and quit the animation.
 	i << .index + 1
 	_local tcoord << .coord.transformed(.map_view.window.transform)
 	_local pixel_coord << pixel_coordinate.new(tcoord.x.rounded, tcoord.y.rounded)
 	mem_img << _self.image_cache[i]
 	
-	pbox << _self.pixel_box
+	pbox << _self.base_pixel_box
 	pbox << pixel_bounding_box.new_with_size(
 			(pixel_coord.x - (pbox.width  _div 2)),
 			(pixel_coord.y - (pbox.height _div 2)),
@@ -128,6 +138,8 @@ _method map_blink_animation.draw()
 			pbox.ymin,
 			_true)
 	gc.dispose()
+
+	#move out and in. use .dir to control the direction.
 	_if .index > 2
 	_then
 		.dir << -1

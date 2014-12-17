@@ -52,14 +52,14 @@ $
 _pragma(classify_level=advanced)
 _method map_animator.add(ani)
 	_if .thr _is _unset _then condition.raise(:error,:string,"Not running") _endif 
-	.command_queue.put(command.add(ani))
+	.command_queue.put(mapani:command.add(ani))
 _endmethod
 $
 
 _pragma(classify_level=advanced)
 _method map_animator.remove(ani)
 	_if .thr _is _unset _then condition.raise(:error,:string,"Not running") _endif 
-	.command_queue.put(command.remove(ani))
+	.command_queue.put(mapani:command.remove(ani))
 _endmethod
 $
 
@@ -201,7 +201,7 @@ _private _method map_animator.do!run_in_background()
 	_if .pauze? _then _return _endif
 	_self.undraw_animations_on_schedule()
 	_if .pauze? _then _return _endif
-	.command_queue.put(command.run())
+	.command_queue.put(mapani:command.run())
 _endmethod
 $
 
@@ -287,7 +287,7 @@ _private _method map_animator.continue_rendering()
 	_lock _self 
 	      _self.set_background_image()
 	      .pauze? << _false
-	      .command_queue.put(command.run())
+	      .command_queue.put(mapani:command.run())
 	_endlock 
 _endmethod
 $
@@ -297,7 +297,7 @@ _method map_animator.stop()
 	_lock _self
 	      .pauze? << _true
 	      _self.clear_backgrounds()
-	      .command_queue.put(command.stop())
+	      .command_queue.put(mapani:command.stop())
 	_endlock 
 _endmethod
 $
