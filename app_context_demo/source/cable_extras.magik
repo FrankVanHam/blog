@@ -1,0 +1,36 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-12-17
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method cable.fire_pre_insert_actions(p_proposed_values)
+	## Pick up the voltage from the transaction context and apply
+	## it so my proposed values.
+	
+	_dynamic !current_transaction!
+	_local voltage << !current_transaction!.transaction_context[:voltage]
+	_if voltage _isnt _unset
+	_then
+		p_proposed_values[:voltage] << voltage
+	_endif
+	# return the new set.
+	_return p_proposed_values
+_endmethod
+$

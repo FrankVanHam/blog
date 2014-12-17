@@ -1,0 +1,108 @@
+##
+## File            : $File$
+## SCM             : $URL$
+##
+## Copyright       : Realworld Systems
+##                   e-mail  : support@realworld-systems.com
+##                   address : Venusstraat 17, 4105 JH Culemborg, The Netherlands
+##                   tel     : +31(0)345 614406
+##                   fax     : +31(0)345 614319
+##
+## Contains        : 
+##
+##
+## Date written    : 2014-12-17
+## Date changed    : $Date$
+## Revision        : $Rev$
+
+_package user
+$
+
+_pragma(classify_level=basic, topic={demo})
+## plugin that sets the application context for the voltage.
+def_slotted_exemplar(:app_context_plugin,
+	{},
+	:plugin)
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method app_context_plugin.init_actions()
+	_self.add_action(
+		sw_action.new(:set_voltage,
+			      :engine, _self,
+			      :value_change_message, :|set_voltage()|,
+			      :value, :none,
+			      :toolbar_control, :text_choice_item,
+			      :items, {{:none, "pick one"},
+				       {:lv, "Lv"},
+				       {:hv, "Hv"},
+				       {:dv, "Dv"}}))
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_method app_context_plugin.set_voltage(p_voltage)
+	## apply the voltage to the map_view and the application context.
+	_self.visibility_by_themes(p_voltage)
+	_self.set_app_context(p_voltage)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={demo})
+_private _method app_context_plugin.set_app_context(p_voltage)
+	## set the application context. Map the voltage to the value
+	## known in the voltage enumerator for the cable.
+	
+	_local _constant map << property_list.new_with(
+					:none, _unset,
+					:lv, "LV",
+					:hv, "11kV",
+					:dv, "132kV")
+	_local value << map[p_voltage]
+	_self.application.set_transaction_context_element(:voltage,value)
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={demo})
+_private _method app_context_plugin.visibility_by_themes(p_voltage)
+	## Set the visibility in the map. use themes for that.
+
+	_local setting << {:lv, _false, :hv, _false, :dv, _false}
+	_if p_voltage <> :none
+	_then
+		_local idx << setting.index_of(p_voltage)
+		setting[idx+1] << _true
+	_endif
+	
+	_local acec << _self.ace_control
+	_for i_scale _over acec.scales.fast_elements()
+	_loop
+		acec.set_visibility_for_themes( i_scale.name.as_symbol(), _scatter setting)
+	_endloop
+	_self.refresh()
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method app_context_plugin.ace_control
+	_local map_plugin << _self.map_manager
+	_return map_plugin.current_map_view.ace_control
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_method app_context_plugin.refresh()
+	_local map_plugin << _self.map_manager
+	_return map_plugin.current_map_view.render()
+_endmethod
+$
+
+_pragma(classify_level=restricted)
+_private _method app_context_plugin.map_manager
+	_return _self.get_service_provider(:map_manager)
+_endmethod
+$
+
