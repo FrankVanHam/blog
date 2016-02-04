@@ -1,0 +1,6 @@
+gui_test_example	1
+
+description
+	Example plugin and model for the GUI test
+end
+

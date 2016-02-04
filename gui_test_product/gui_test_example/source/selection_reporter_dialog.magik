@@ -1,0 +1,148 @@
+_package user
+$
+
+#remex(:selection_reporter_dialog)
+$
+
+_pragma(classify_level=basic, topic={test})
+def_slotted_exemplar(:selection_reporter_dialog,
+	## 
+	## Example dialog to report a selection of objects from the map
+	## to a file. The application logic is defined in the
+	## presentation model, self will only provide the user
+	## interface. 
+	## 
+	{
+		{:owner,              _unset},
+		{:presentation_model, _unset} # presentation model
+	},
+	:model)
+$
+
+message_handler.new(:selection_reporter_dialog).add_uses(:model, :gen_graphics)
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog.new(p_pmodel, p_plugin)
+	_return _clone.init(p_pmodel, p_plugin)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog.init(p_pmodel, p_plugin)
+	_super.init()
+	.presentation_model << p_pmodel
+	.presentation_model.gui << _self 
+	
+	.owner << p_plugin
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog.title
+	_return _self.message(:title)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog.activate_in(p_frame)
+	_local rows_rc << rowcol.new(p_frame,_unset, 1, _unset, :style, :top_level, :resize?, _true,
+				     :row_resize_values, {0,100,0,0}) # only the 2th rowcol should resize vertical
+	_self.build_filename_panel(rows_rc)
+	_self.build_list_panel(rows_rc)
+	_self.build_toggle_panel(rows_rc)
+	_self.build_buttons_panel(rows_rc)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog.build_filename_panel(p_container)
+	_local rc << rowcol.new(p_container, 1, _unset, _unset, :style, :nested, :col_alignment, :fill)
+	label_item.new(rc, _self.message(:filename))
+	x << _self.actions[:filename].place_control_on(rc, :dialog)
+	x.col_alignment << :fill
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog.build_list_panel(p_container)
+	_local rc << rowcol.new(p_container, _unset, 1, _unset, :style, :nested,
+				:row_alignment, :fill, :col_alignment, :fill,
+				:row_resize_values, {100,0}) # only the first rowcol should resize vertical
+	_self.actions[:tree].place_control_on(rc,
+					      :column_widths, {100, 40, 150},
+					      :column_headings, _self.tree_column_headings,
+					      :edit_on_click?, _true,
+					      :editor_required_notifier, handler.new(_self,:|editor_required()|),
+					      :row_alignment, :fill, :col_alignment, :fill)
+	_self.build_list_buttons_panel(rc)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog.tree_column_headings
+	_return {_self.message(:value),
+		 _self.message(:on),
+		 _self.message(:name)}	 
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog.build_list_buttons_panel(p_container)
+	_local rc << rowcol.new(p_container, 1, _unset, _unset, :style, :button_box)
+	_self.actions[:add].place_control_on(rc, :dialog)
+	_self.actions[:del].place_control_on(rc, :dialog)
+	_self.actions[:select_all].place_control_on(rc, :dialog)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog.build_toggle_panel(p_container)
+	_local rc << rowcol.new(p_container, 1, _unset, _unset, :style, :nested)
+	_self.actions[:check_all].place_control_on(rc, :dialog, :caption, _self.message(:check_all))
+	_self.actions[:check_count].place_control_on(rc, :dialog)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog.build_buttons_panel(p_container)
+	_local rc << rowcol.new(p_container, 1, _unset, _unset, :style, :button_box, :col_alignment, :right)
+	_self.actions[:ok].place_control_on(rc, :dialog, :min_width, 75)
+	_self.actions[:close].place_control_on(rc, :dialog, :min_width, 75)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog.actions
+	_return .presentation_model.actions
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog.on_activation()
+	## Immediately set the current selection in the dialog
+	#
+	.presentation_model.map_selection_changed(.owner.map_selection())
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog.map_selection_changed(p_map, p_selection)
+	## Callback method from my owner plugin that the map selection
+	## has changed.
+	#
+	.presentation_model.map_selection_changed(p_selection)
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog.editor_required(p_tree, p_row_index, p_value_id, p_agent)
+	## Callback method from the tree_item when the user wants to
+	## edit a value (P_VALUE)
+	#
+	_return in_place_value_editor.new(p_agent)
+_endmethod
+$

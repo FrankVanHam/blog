@@ -1,0 +1,49 @@
+_package user
+$
+
+_pragma(classify_level=basic, topic={test})
+def_slotted_exemplar(:selection_reporter_engine,
+	## Test engine that does the actual work or reporting objects. 
+	{})
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_engine.new()
+	_return _clone 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_engine.report(p_list, p_filename)
+	_local str << external_text_output_stream.new(p_filename)
+	_protect
+		_self.report_to_stream(p_list, str)
+	_protection
+		str.close()
+	_endprotect
+	system.start_command({"notepad", p_filename})
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_engine.report_to_stream(p_list, p_stream)
+	_for i_obj, i_props _over p_list.fast_keys_and_elements()
+	_loop
+		_local complete? << i_props[:on]
+		_local name << i_props[:name]
+		p_stream.write(name, " : ", i_obj)
+		p_stream.newline()
+		_if complete?
+		_then
+			_for i_field _over i_obj.descriptor.all_fields.fast_elements()
+			_loop
+				p_stream.write(tab_char)
+				_local v << i_obj.perform(i_field.name)
+				p_stream.write(i_field.name, tab_char, v)
+				p_stream.newline()
+			_endloop	
+		_endif 
+		p_stream.newline()
+	_endloop 
+_endmethod
+$

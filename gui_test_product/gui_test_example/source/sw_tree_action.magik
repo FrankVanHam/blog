@@ -1,0 +1,345 @@
+_package user
+$
+
+#remex(:sw_tree_action)
+$
+
+_pragma(classify_level=basic, topic={graphics})
+def_slotted_exemplar(:sw_tree_action,
+	## action, similar to sw_action, dedicated to tree_items.
+	## 
+	{
+		{:name,            _unset, :readable},
+		{:engine,          _unset},
+		{:control,         _unset},
+		{:properties,      _unset},
+		{:data,            _unset, :readable},
+		{:selection,       _unset, :readable}
+	})
+$
+
+_pragma(classify_level=basic, topic={graphics})
+_method sw_tree_action.new(p_name, p_engine, _gather p_properties)
+	## Create a sw_tree_action that behaves like a tree_item, but
+	## without the GUI. Create the GUI by invoking place_control_on()
+	##
+	## P_NAME: a symbol for the name of self.
+	##
+	## P_ENGINE: the engine that will receive the notification
+	## supplied in P_PROPERTIES
+	##
+	## P_PROPERTIES are paired elements with keys and value
+	## Allowed keys are all possible keys allowed in the creation of a
+	## tree_item. Addition values are:
+	##
+	## :data: initial list of trees.
+	##
+	## :selection: initial selection of trees
+	##
+	_return _clone.init(p_name, p_engine, p_properties)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.init(p_name, p_engine, p_properties)
+	## 
+	##
+	.name << p_name
+	.engine << p_engine
+	.properties << property_list.new()
+	.data << {}
+	.selection << {}
+	_local props << property_list.new_with( _scatter p_properties )
+	_for property_name, value _over	props.fast_keys_and_elements()
+	_loop
+		_if property_name _is :data
+		_then
+			.data << value
+		_elif property_name _is :selection
+		_then
+			.selection << value
+		_else 
+			.properties[property_name] << value
+		_endif 
+	_endloop 
+	
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={graphics})
+_method sw_tree_action.renew_data(p_data)
+	## Renews the list with P_DATA. Implicitly empties the
+	## selection. 
+	#
+	_self.engine_selection << {}
+	.data << p_data
+	_if .control _isnt _unset
+	_then
+		.control.renew()
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={graphics})
+_method sw_tree_action.update_data(p_data)
+	## Updates the list with P_DATA. Tries to retain the current
+	## selection.
+	#
+	.data << p_data
+	
+	new_selection << _self.filter_selection()
+	_if new_selection.size <> .selection.size
+	_then
+		_self.engine_selection << new_selection
+	_else
+		.selection << new_selection
+	_endif 
+	
+	_if .control _isnt _unset
+	_then
+		.control.refresh()
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.filter_selection()
+	_local keys << equality_set.new()
+	_for i_tree _over .data.fast_elements()
+	_loop
+		keys.add(i_tree.key)
+	_endloop
+	_local new_selection << rope.new()
+	_for i_tree _over .selection.fast_elements()
+	_loop
+		_if keys.includes?(i_tree.key)
+		_then
+			new_selection.add(i_tree)
+		_endif
+	_endloop
+	_return new_selection
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={graphics})
+_method sw_tree_action.selection << p_selection
+	## Set the selection to P_SELECTION
+	#
+	_return _self.engine_selection << p_selection
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.engine_selection << p_selection
+	_if .selection <> p_selection
+	_then 
+		.selection << p_selection
+		_self.int!notify_engine_selection(p_selection)
+		_self.int!notify_gui_selection(p_selection)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.gui_selection << p_selection
+	.selection << p_selection
+	_self.int!notify_engine_selection(p_selection)
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.int!notify_engine_selection(p_selection)
+	_local notifier << .properties[:select_notifier]
+	_if notifier _isnt _unset
+	_then
+		notifier.send_to(.engine, p_selection)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.int!notify_gui_selection(p_selection)
+	_if .control _isnt _unset
+	_then
+		.control.selection.select_clear()
+		_for i_tree _over p_selection.fast_elements()
+		_loop
+			.control.tree_manager[i_tree.key].selected? << _true
+		_endloop 
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={graphics})
+_method sw_tree_action.place_control_on(p_container, _gather p_properties)
+	## Creates a tree_item on P_CONTAINER with given
+	## properties.
+	## Note that properties :data_selector, :select_notifier,
+	## :toggle_notifier, :value_changed_notifier are not processed
+	## because they are coupled with the engine.
+	##
+	_local props << property_list.new_with(_scatter p_properties)
+	
+	props.add_all(.properties)
+	props.remove_key(:data_selector)
+	props.remove_key(:select_notifier)
+	props.remove_key(:toggle_notifier)
+	props.remove_key(:value_changed_notifier)
+	_if p_container.swift_control?
+	_then
+		the_control << sw_tree.new(p_container,
+					     :model, _self,
+					     :value_changed_notifier, :|tree_value_changed()|,
+					     :toggle_notifier, :|tree_toggled()|,
+					     :select_notifier, :|trees_selected()|,
+					     :data_selector,   :|get_trees()|,
+					     _scatter props)
+	_else
+		the_control << tree_item.new(p_container,
+					     :model, _self,
+					     :value_changed_notifier, :|tree_value_changed()|,
+					     :toggle_notifier, :|tree_toggled()|,
+					     :select_notifier, :|trees_selected()|,
+					     :data_selector,   :|get_trees()|,
+					     _scatter props)
+	_endif
+	.control << the_control
+	_return the_control
+_endmethod
+$
+
+
+_pragma(classify_level=restricted, topic={graphics})
+_method sw_tree_action.get_trees()
+	_return .data
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_method sw_tree_action.trees_selected(p_tree_selection, _gather p_data)
+	_local sel << rope.new()
+	_for i_tree _over p_tree_selection.fast_elements()
+	_loop
+		sel.add(i_tree)
+	_endloop 
+	_self.gui_selection << sel
+_endmethod
+$
+
+
+_pragma(classify_level=restricted, topic={graphics})
+_method sw_tree_action.tree_value_changed(p_tree, p_key, p_new_value, p_old_value, p_editor)
+	_local notifier << .properties[:value_changed_notifier]
+	_if notifier _isnt _unset
+	_then
+		notifier.send_to(.engine, p_tree, p_key, p_new_value, p_old_value, p_editor)
+	_endif
+_endmethod
+$
+
+
+_pragma(classify_level=restricted, topic={graphics})
+_method sw_tree_action.tree_toggled(p_tree, p_row, p_event, p_key, _gather p_args)
+	_local old_value << p_tree.value(p_key)
+	_local new_value << _not old_value
+	p_tree.value(p_key) << new_value
+	
+	_self.int!notify_engine_toggle(p_tree, p_key, new_value, old_value)
+	_return _true
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={graphics})
+_method sw_tree_action.toggle(p_tree, p_key)
+	## Toggle the checkbox for P_KEY in the tree
+	#
+	_local old_value << p_tree.value(p_key)
+	_local new_value << _not old_value
+	_self.set_engine_toggle_value(p_tree, p_key, new_value, old_value)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={graphics})
+_method sw_tree_action.check(p_tree, p_key)
+	## Checks the checkbox for P_KEY in the tree.
+	#
+	_local old_value << p_tree.value(p_key)
+	_local new_value << _true
+	_self.set_engine_toggle_value(p_tree, p_key, new_value, old_value)	
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={graphics})
+_method sw_tree_action.uncheck(p_tree, p_key)
+	## Unchecks the checkbox for P_KEY in the tree
+	#
+	_local old_value << p_tree.value(p_key)
+	_local new_value << _false
+	_self.set_engine_toggle_value(p_tree, p_key, new_value, old_value)	
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.set_engine_toggle_value(p_tree, p_key, new_value, old_value)
+	_if new_value <> old_value
+	_then 
+		p_tree.value(p_key) << new_value
+		_self.int!notify_gui_toggle()
+		_self.int!notify_engine_toggle(p_tree, p_key, new_value, old_value)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.int!notify_gui_toggle()
+	_if .control _isnt _unset
+	_then
+		.control.refresh()
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.int!notify_engine_toggle(p_tree, p_key, new_value, old_value)
+	_local notifier << .properties[:toggle_notifier]
+	_if notifier _isnt _unset
+	_then
+		notifier.send_to(.engine, p_tree, p_key, new_value, old_value)
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={graphics})
+_method sw_tree_action.set_value(p_tree, p_key, p_value)
+	## Set the value for P_KEY to _VALUE for the tree.
+	#
+	_local old_value << p_tree.value(p_key)
+	_if p_value <> old_value
+	_then 
+		p_tree.value(p_key) << p_value
+		_self.int!notify_gui_set_value()
+		_self.int!notify_engine_set_value(p_tree, p_key, p_value, old_value)
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.int!notify_engine_set_value(p_tree, p_key, p_new_value, p_old_value)
+	_local notifier << .properties[:value_changed_notifier]
+	_if notifier _isnt _unset
+	_then
+		notifier.send_to(.engine, p_tree, p_key, p_new_value, p_old_value, _unset)
+	_endif
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={graphics})
+_private _method sw_tree_action.int!notify_gui_set_value()
+	_if .control _isnt _unset
+	_then
+		.control.refresh()
+	_endif 
+_endmethod
+$

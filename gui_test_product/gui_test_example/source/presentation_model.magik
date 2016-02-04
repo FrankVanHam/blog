@@ -1,0 +1,106 @@
+_package user
+$
+
+
+#remex(:presentation_model)
+$
+
+_pragma(classify_level=basic, topic={test})
+def_slotted_exemplar(:presentation_model,
+	## 
+	## Presentation model pattern for the selection reporter. The
+	## presentation model handles all the GUI logic. 
+	## A dialog should simply take the presentation actions
+	## and create controls in a frame for them. Something like:
+	## .pmodel.actions[:ok].place_control_on(rc, :dialog, :min_width, 75)
+	##
+	## A test_case can use the presentation model and use the actions to
+	## simulate user actions. Something like:
+	## .pmodel.actions[:ok].execute_action()
+	##
+	## If a test case can validate the presentation, the dialog
+	## will be valid too. 
+	## 
+	{
+		{:gui,     _unset},
+		{:actions, _unset, :readable}
+	})
+$
+
+_pragma(classify_level=basic, topic={test})
+_method presentation_model.new(_gather a)
+	## Create and return a new presentation model
+	_return _clone.init(_scatter a)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method presentation_model.init(_gather a)
+	## Initialise slots
+	.actions << property_list.new()
+	_self.init_actions()
+	_self.manage_actions()
+	_return _self 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method presentation_model.gui << p_gui
+	## Sets the GUI. 
+	#
+	.gui << p_gui
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={test})
+_method presentation_model.message(_gather a)
+	_if .gui _isnt _unset
+	_then 
+		_return .gui.message(_scatter a)
+	_else
+		_return "Message"
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method presentation_model.has_message?(p_message_id)
+	## Callback method from the sw_actions to test if self has a
+	## translation for a message.
+	#
+	_if .gui _isnt _unset
+	_then 
+		_return .gui.has_message?(p_message_id)
+	_else
+		_return _false 
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method presentation_model.add_action(p_name, _gather p_properties)
+	.actions[p_name] << sw_action.new(p_name, _scatter p_properties)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method presentation_model.add_tree_action(p_name, _gather p_properties)
+	.actions[p_name] << sw_tree_action.new(p_name, _scatter p_properties)
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={test})
+_abstract _private _method presentation_model.init_actions()
+	## Intialise actions.
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_abstract _private _method presentation_model.manage_actions()
+	## Enable/disable the actions 
+	## 
+	
+_endmethod
+$

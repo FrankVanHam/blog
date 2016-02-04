@@ -1,0 +1,7 @@
+sw_tree_action
+presentation_model
+
+selection_reporter_dialog
+selection_reporter_plugin
+selection_reporter_pmodel
+selection_reporter_engine

@@ -1,0 +1,12 @@
+_package sw
+$
+
+_pragma(classify_level=basic, topic={test})
+_method mmock_stub.override(mthd)
+	## Override the method named MTHD. Use this method incase the
+	## stub allready implements the method and you want to replace
+	## it anyway.
+	
+	_return _self.does_not_understand(message.new(mthd,{}), _self.method(mthd).private?)
+_endmethod
+$

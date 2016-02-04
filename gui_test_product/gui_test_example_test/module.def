@@ -1,0 +1,11 @@
+gui_test_example_test	1
+
+description
+	Example of a gui unit test
+end
+requires
+	simple_munit_gui
+end
+tests_modules
+	gui_test_example
+end

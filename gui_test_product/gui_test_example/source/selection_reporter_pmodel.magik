@@ -1,0 +1,295 @@
+_package user
+$
+
+#remex(:selection_reporter_pmodel)
+$
+
+_pragma(classify_level=basic, topic={test})
+def_slotted_exemplar(:selection_reporter_pmodel,
+	## 
+	## Presentation model pattern for the selection reporter. The
+	## presentation model handles all the GUI logic. 
+	## A dialog should simply take the presentation actions
+	## and create controls in a frame for them. Something like:
+	## .pmodel.actions[:ok].place_control_on(rc, :dialog, :min_width, 75)
+	##
+	## A test_case can use the presentation model and use the actions to
+	## simulate user actions. Something like:
+	## .pmodel.actions[:ok].execute_action()
+	##
+	## If a test case can validate the presentation, the dialog
+	## will be valid too. 
+	## 
+	{
+		{:engine,        _unset},
+		{:filename,      _unset, :readable},
+		{:data,          _unset},
+		{:selection,     _unset},
+		{:map_selection, _unset, :readable}
+	}, :presentation_model)
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.new(p_engine)
+	## Create and return a new presentation model
+	_return _clone.init(p_engine)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_pmodel.init(p_engine)
+	## Initialise slots
+	
+	.engine << p_engine
+	_self.init_state()
+	_return _super.init()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_pmodel.init_state()
+	.filename << _unset
+	.data << equality_hash_table.new()
+	.selection << equality_set.new()
+	.map_selection << equality_geometry_set.new()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_pmodel.init_actions()
+	## Intialise actions.
+	_self.add_action(:filename, :engine, _self,
+			 :dialog_control, :text_item,
+			 :value_change_message, :|filename_changed()|,
+			 :incremental_change_message, :|filename_changed()|)
+	_self.add_action(:add, :engine, _self, :action_message, :|add()|,
+			 :image, {:element_add, :ui_resources})
+	_self.add_action(:del, :engine, _self, :action_message, :|del()|,
+			 :image, {:element_remove, :ui_resources})
+	_self.add_action(:select_all, :engine, _self,
+			 :action_message, :|select_all()|)
+	_self.add_tree_action(:tree, _self,
+			      :data, rope.new(),
+			      :selection, {},
+			      
+			      :value_changed_notifier, :|tree_value_changed()|,
+			      :toggle_notifier,        :|tree_toggle_changed()|,
+			      :select_notifier,        :|tree_selection_changed()|)
+	_self.add_action(:check_count,
+			 :engine, _self,
+			 :value, "0",
+			 :dialog_control, :label)
+	_self.add_action(:check_all,
+			 :engine, _self,
+			 :action_message, :|check_all()|)
+	_self.add_action(:ok, :engine, _self, :action_message, :|ok()|)
+	_self.add_action(:close, :engine, _self, :action_message, :|close()|)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.map_selection_changed(p_selection)
+	## Callback method from the GUI to set the map selection that
+	## it has detected in the application.
+	#
+	.map_selection << p_selection
+	_self.manage_actions()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.tree_selection_changed(p_selection)
+	## Update the internal representation of the
+	## selection. Internally it is a eq_set of rwos.
+	#
+	.selection.empty()
+	_for i_tree _over p_selection.fast_elements()
+	_loop
+		.selection.add(i_tree.key)
+	_endloop 
+	_self.manage_actions()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.tree_toggle_changed(p_tree, p_key, p_value, p_old_value)
+	## Update the internal representation of the data, a
+	## eq_has_table keyed on the rwo with a property_list as value.
+	#
+	.data[p_tree.key][:on] << p_value
+	
+	_self.update_toggle_count()
+	_self.manage_actions()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.tree_value_changed(p_tree, p_key, p_value, p_old_value, p_editor)
+	## Update the internal representation of the value.
+	#
+	_if p_value.empty?
+	_then
+		p_tree.value(p_key) << p_old_value
+		condition.raise(:user_error, :string, _self.message(:can_not_have_empty_name))
+	_endif
+	
+	.data[p_tree.key][p_key] << p_value
+	
+	_self.manage_actions()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_pmodel.update_toggle_count()
+	## Update the label that shows the number of checked items.
+	#
+	.actions[:check_count].value << _self.toggle_count.write_string
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_pmodel.toggle_count
+	## Return the number of elements that are checked.
+	#
+	_local c << 0
+	_for i_rwo, i_props _over .data.fast_keys_and_elements()
+	_loop
+		i_on? << i_props[:on]
+		_if i_on? _then c +<< 1 _endif
+	_endloop 
+	_return c
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.check_all()
+	## Toggle/Check all elements in the tree.
+	#
+	_for i_rwo _over .data.fast_keys()
+	_loop
+		.data[i_rwo][:on] << _true 
+	_endloop
+	.actions[:tree].update_data(_self.trees)
+	_self.update_toggle_count()
+	_self.manage_actions()
+
+# OR simulate a user check
+#	_for i_tree _over list.fast_elements()
+#	_loop
+#		.actions[:tree].check(i_tree, :on)
+#	_endloop
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.add()
+	## Add the map_selection to the data.
+	#
+	_for i_rwo _over .map_selection.rwo_set().fast_elements()
+	_loop
+		.data[i_rwo] << property_list.new_with(
+					:on, _true,
+					:name, i_rwo.external_name)
+	_endloop 
+	.actions[:tree].renew_data(_self.trees)
+	_self.update_toggle_count()
+	_self.manage_actions()
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_pmodel.trees
+	## Return the external (tree) representation of the internal data
+	#
+	_local trees << rope.new_for(.data.size)
+	_for i_rwo, i_props _over .data.fast_keys_and_elements()
+	_loop
+		trees.add(_self.display_tree(i_rwo, i_props))
+	_endloop
+	_return trees 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_pmodel.display_tree(p_rwo, p_props)
+	## Return the display_tree for the P_RWO.
+	#
+	_local dt << display_tree.new(p_rwo, p_props)
+	dt.styled_string << {p_rwo.description(), :tab, :toggle, :on, :tab, :value, :name}
+	_return dt
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.del()
+	## Delete the selected trees from the tree_item.
+	#
+	_for i_rwo _over .selection.fast_elements()
+	_loop 
+		.data.remove_key(i_rwo)
+	_endloop 
+	
+	.actions[:tree].renew_data(_self.trees)
+	_self.update_toggle_count()
+	_self.manage_actions()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.select_all()
+	## Select all the items in the tree.
+	#
+	_local sel << .actions[:tree].data
+	.actions[:tree].selection << sel	
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.filename_changed(p_string)
+	## Callback method when the user entered a filename
+	#
+	.filename << p_string
+	_self.manage_actions()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.ok()
+	## Callback button when the user pressed ok. Will validate the
+	## file and run the report.
+	#
+	_self.validate_filename()
+	.engine.report(.data, .filename)
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.close()
+	_if .gui _isnt _unset
+	_then 
+		.gui.close()
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_pmodel.validate_filename()
+	_if _not system.file_creatable?(.filename)
+	_then
+		condition.raise(:user_error, :string,
+				_self.message(:file_not_creatable, _unset, .filename))
+	_endif 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_pmodel.manage_actions()
+	_local t << .actions[:tree]
+	.actions[:select_all].enabled? << .selection.size <> .data.size
+	.actions[:check_all].enabled? << _self.toggle_count <> .data.size
+	.actions[:add].enabled? << .map_selection.empty?.not
+	.actions[:del].enabled? << .selection.empty?.not
+	.actions[:ok].enabled?  << .data.empty?.not _and .filename _isnt _unset _andif .filename.empty?.not
+_endmethod
+$

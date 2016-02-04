@@ -1,0 +1,268 @@
+_package user
+$
+
+#remex(:selection_reporter_dialog_test_case)
+$
+
+_pragma(classify_level=basic, topic={test})
+def_slotted_exemplar(:selection_reporter_dialog_test_case,
+	## 
+	## Test the behavior of the selection_reporter presentation model.
+	## 
+	{
+		{:pmodel, _unset},
+		{:report_data, _unset},
+		{:report?, _unset}
+	},
+	:test_case)
+$
+
+_pragma(classify_level=restricted, topic={test})
+_method selection_reporter_dialog_test_case.set_up()
+	_local engine << _self.mock_engine()
+	_local pmodel << selection_reporter_pmodel.new(engine)
+	.pmodel << pmodel
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog_test_case.mock_gui()
+	## Mock the GUI. The presentation_model only needs the Gui to
+	## respond to renew_trees() and close()
+	
+	_local gui << mock(:gui)
+	stub(gui).close()
+	stub(gui).message().then_return("Message") 
+	_return gui
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog_test_case.mock_engine()
+	## Mock the engine. The presentation_model only needs the
+	## engine to respond to report(). We will set .report? to _true
+	## and assign .report_data to the given data if the
+	## engine.report() is invoked. 
+	
+	_local engine << mock(:engine)
+	.report? << _false 
+	_local me << _self
+	_local a_proc << _proc(data, file)
+				 _import me
+				 me.notice_report(data, file)
+			 _endproc 
+	stub(engine).report().with_method(a_proc)
+	_return engine
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.notice_report(p_data, p_file)
+	.report_data << p_data
+	.report? << _true 
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.tear_down()
+	.pmodel.close()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.test_initially_disabled_states()
+	## Test that when the GUi is activated initially, the ok, add
+	## and del buttons are greyed out.
+	#
+	_local as << .pmodel.actions
+	_self.assert_false(as[:ok].enabled?, "When activated, the dialog OK button is disabled")
+	_self.assert_false(as[:add].enabled?, "When activated, the dialog Add button is disabled")
+	_self.assert_false(as[:del].enabled?, "When activated, the dialog Del button is disabled")
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.test_add()
+	## Test that when something is selected in the map, the add
+	## button will be enabled. After pressing the add button the
+	## tree_item should be populated.
+	#
+	_local as << .pmodel.actions
+	_self.simulate_map_selection()
+	_self.assert_false(as[:ok].enabled?, "When activated, the dialog OK button is disabled")
+	_self.assert_true(as[:add].enabled?, "When something is selected in the map, The Add button should be pressed")
+	_self.assert_false(as[:del].enabled?, "When activated, the dialog Del button is disabled")
+	
+	as[:add].execute_action()
+	
+	_self.assert_true(as[:tree].data.empty?.not, "After pressing Add, the list should be populated")
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.test_del()
+	## Test that after something is added to the list and selected,
+	## the del button is enabled. After pressing del, the tree
+	## should be empty again and the del button disabled.
+	#
+	_local as << .pmodel.actions
+	_self.add_map_selection()
+	as[:tree].selection << as[:tree].data.copy()
+	
+	_self.assert_true(as[:del].enabled?, "When something is selected, the del button should be activated")
+	
+	as[:del].execute_action()
+	_self.assert_true(as[:tree].data.empty?, "After deleting the single element, the list should be empty")
+	_self.assert_false(as[:del].enabled?, "After deleting the single element, the Del button should be disabled")
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.test_filename_validation()
+	## Test that using an invalid filename will result in a user_error.
+	## Implicitly will test that entering a filename and filling the tree will enable the do button.
+	#
+	_local as << .pmodel.actions
+	_self.add_map_selection()
+	as[:filename].value << "c::\\not_allowed.txt"
+	_self.assert_true(as[:ok].enabled?, "The list is populated and a file is entered, OK should be enabled")
+	_self.assert_raised_condition(:user_error, as[:ok], :|execute_action()|, "Dialog should raise a condition because the file is not writable")
+	_self.assert_false(.report?, "The report should not have run")
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.test_engine_execution()
+	## Test that the engine is actually invoked if someting is in
+	## the tree and a valid filenme is entered.
+	#
+	_local as << .pmodel.actions
+	_self.prepare_for_report()
+	as[:ok].execute_action()
+	_self.assert_true(.report?, "The report should have been invoked")
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.test_toggles()
+	## Test that the check_count matches the number of check items
+	## all the time. Also check if the check_all button is only
+	## enabled when there are unchecked items.
+	##
+	_local as << .pmodel.actions
+	_self.add_map_selection()
+	
+	_self.assert_is(2, as[:check_count].value.as_number(), "The number should read 2, as 2 items should be checked automatically when they were added")
+	_self.assert_false(as[:check_all].enabled?, "The button to check all should be disabled as all should be checked")
+	
+	_local a_tree << as[:tree].data.an_element()
+	as[:tree].toggle(a_tree, :on)
+	_self.assert_is(1, as[:check_count].value.as_number(), "The number should read 1, as 1 item was unchecked")
+	_self.assert_true(as[:check_all].enabled?, "The button to check all should be enabled as some are not checked now")
+	
+	as[:check_all].execute_action()
+	_self.assert_is(2, as[:check_count].value.as_number(), "The number should read 2, as 2 items should be checked automatically when they were added")
+	_self.assert_false(as[:check_all].enabled?, "The button to check all should be disabled as all should be checked")	
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.test_select_all()
+	## Test that the select_all button is only enabled if there are
+	## unselected items.
+	_local as << .pmodel.actions
+	_self.add_map_selection()
+	_self.assert_true(as[:select_all].enabled?, "The button to select all should be enabled as none are selected yet")
+	
+	as[:tree].selection << as[:tree].data.copy()
+	_self.assert_false(as[:select_all].enabled?, "The button to select all should be disabled as all are selected allready")
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.test_that_name_can_not_be_empty()
+	## Test that the user is not allowed to set an empty name
+	#
+	_local as << .pmodel.actions
+	_self.add_map_selection()
+	
+	_local a_tree << as[:tree].data.an_element()
+	_self.assert_raised_condition(:user_error, as[:tree], :|set_value()|, {a_tree, :name, ""}, "Can not set an empty name")
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_dialog_test_case.test_that_toggle_and_name_are_applied()
+	## Test that the toggle value and the set name are applied to
+	## the report engine.
+	## 
+	_local as << .pmodel.actions
+	_self.prepare_for_report()
+	
+	_local a_tree << as[:tree].data.an_element()
+	as[:tree].toggle(a_tree, :on)
+	as[:tree].set_value(a_tree, :name, "Frank")
+	as[:ok].execute_action()
+	
+	_local rwo << a_tree.key
+	_local props << .report_data[rwo]
+	_self.assert_true("Frank" = props[:name], "The reported name should be Frank")
+	_self.assert_true(_false  = props[:on], "The reported toggle should be false")
+_endmethod
+$
+
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog_test_case.simulate_map_selection()
+	## Mock a map selection of two geometries. Note that the mock
+	## is enough to add them to a geometry_set and create a
+	## rwo_set() from it.
+	#
+	_local sel << equality_geometry_set.new()
+	
+	_local ds_mock << mock(:ds, gis_ds_view)
+	# GEOM1
+	_local rwo1 << mock(:rwo1, rwo_record)
+	stub(rwo1).override(:equality_hash).then_return(rwo1.as_oop)
+	stub(rwo1).dataset.then_return(ds_mock)
+	stub(rwo1).description().then_return("RWO1")
+	stub(rwo1).external_name.then_return("RWO1")
+	_local geom1 << mock(:geom1, pseudo_chain)
+	stub(geom1).rwo.then_return(rwo1)
+	
+	#GEOM2
+	_local rwo2 << mock(:rwo2, rwo_record)
+	stub(rwo2).override(:equality_hash).then_return(rwo2.as_oop)
+	stub(rwo2).dataset.then_return(ds_mock)
+	stub(rwo2).description().then_return("RWO2")
+	stub(rwo2).external_name.then_return("RWO2")
+	_local geom2 << mock(:geom2, pseudo_chain)
+	stub(geom2).rwo.then_return(rwo2)
+	
+	sel.add(geom1)
+	sel.add(geom2)
+	
+	.pmodel.map_selection_changed(sel)
+	_return sel
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog_test_case.add_map_selection()
+	## Add the selection from the map in the list
+	#
+	 _local as << .pmodel.actions
+	_local sel << _self.simulate_map_selection()
+	as[:add].execute_action()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_dialog_test_case.prepare_for_report()
+	## Add the map selection and set a valid file name.
+	## 
+	_local as << .pmodel.actions
+	_self.add_map_selection()
+	as[:filename].value << system.temp_file_name("report.txt")
+_endmethod
+$

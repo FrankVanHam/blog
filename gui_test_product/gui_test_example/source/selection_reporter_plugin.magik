@@ -1,0 +1,69 @@
+_package user
+$
+
+_pragma(classify_level=basic, topic={test})
+def_slotted_exemplar(:selection_reporter_plugin,
+	## Simple plugin that starts the selection_reporter_dialog. The
+	## plugin monitors the databus for map selections.
+	{},
+	:plugin)
+$
+
+_pragma(classify_level=basic, topic={test})
+selection_reporter_plugin.define_shared_constant(:databus_consumer_data_types,
+						 {:map_selection},
+						 :public)
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_plugin.init_actions()
+	_self.add_action(sw_action.new(:activate_dialog,
+				       :engine, _self,
+				       :action_message, :|activate_dialog()|))
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_plugin.activate_dialog()
+	_local dia << _self.dialog
+	_if dia _is _unset
+	_then
+		dia << _self.create_dialog()
+	_endif
+	dia.activate()
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_plugin.dialog
+	_return _self.dialogs[:dialog]
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_private _method selection_reporter_plugin.create_dialog()
+	_local engine << selection_reporter_engine.new()
+	_local pmodel << selection_reporter_pmodel.new(engine)
+	_local dia << selection_reporter_dialog.new(pmodel, _self)
+	_self.dialogs[:dialog] << dia
+	_return  dia
+_endmethod
+$
+
+_pragma(classify_level=basic, topic={test})
+_method selection_reporter_plugin.map_selection()
+	_local data << _self.databus_request_data(:map_selection)
+	_return data[2]
+_endmethod
+$
+
+_pragma(classify_level=restricted, topic={topology,editors})
+_method selection_reporter_plugin.sw_databus_data_available(p_data_type_name, p_data)
+	##
+	## Watch for changes of the current selection
+	##
+	_self.dialog.map_selection_changed(_scatter p_data)
+_endmethod
+$
+
+
